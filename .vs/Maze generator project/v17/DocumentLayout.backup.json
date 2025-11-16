@@ -18,21 +18,8 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "Header.h",
-              "DocumentMoniker": "C:\\Users\\damya\\OneDrive\\Desktop\\Projects 2025\\maze-game\\Maze generator project\\Header.h",
-              "RelativeDocumentMoniker": "Maze generator project\\Header.h",
-              "ToolTip": "C:\\Users\\damya\\OneDrive\\Desktop\\Projects 2025\\maze-game\\Maze generator project\\Header.h",
-              "RelativeToolTip": "Maze generator project\\Header.h",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-11-16T16:28:11.338Z",
-              "EditorCaption": ""
-            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
@@ -41,9 +28,22 @@
               "RelativeDocumentMoniker": "Maze generator project\\Maze generator project.cpp",
               "ToolTip": "C:\\Users\\damya\\OneDrive\\Desktop\\Projects 2025\\maze-game\\Maze generator project\\Maze generator project.cpp*",
               "RelativeToolTip": "Maze generator project\\Maze generator project.cpp*",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAIwBAAAAAAAAAAAiwLEBAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-11-16T15:07:55Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Header.h",
+              "DocumentMoniker": "C:\\Users\\damya\\OneDrive\\Desktop\\Projects 2025\\maze-game\\Maze generator project\\Header.h",
+              "RelativeDocumentMoniker": "Maze generator project\\Header.h",
+              "ToolTip": "C:\\Users\\damya\\OneDrive\\Desktop\\Projects 2025\\maze-game\\Maze generator project\\Header.h",
+              "RelativeToolTip": "Maze generator project\\Header.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-11-16T17:43:07.235Z",
               "EditorCaption": ""
             }
           ]

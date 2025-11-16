@@ -1,22 +1,29 @@
 #include <iostream>
-#include <vector> 
-#include <algorithm> 
+#include <vector>
+#include <algorithm>
 #include <conio.h>
+#include <chrono> // For timing
+#include <iomanip> // For setprecision and fixed <<
+#include <limits> // Required for numeric_limits
 
-#define NOMINMAX 
+#define NOMINMAX
 
 #include <windows.h>
 
 
 using namespace std;
 
- char PLAYER = 245;
- char WALL = 178;//176 176 178 219
+// --- TIMER ADDITION: Global timer variables
+std::chrono::steady_clock::time_point g_start_time;
+bool g_timer_started = false;
+double g_final_time_seconds = 0.0; // To store the time when the game is won
+
+char PLAYER = 245;
+char WALL = 178;//176 176 178 219
 
 const char PATH = ' ';
 const char START = 'S';
 const char END = 'E';
-
 
 
 int g_height = 0;
@@ -173,7 +180,24 @@ void print_header(const string& message) {
     cout << "\033[H";
     cout << "\033[1m+---[ C++ MAZE: " << g_height << "x" << g_width << " ]---+\033[0m\n";
     cout << message << "\n";
-    cout << "Current Pos: (" << p_r << ", " << p_c << ")\n\n";
+
+    // --- TIMER ADDITION: Display current elapsed time or final time ---
+    cout << "Current Pos: (" << p_r << ", " << p_c << ") | ";
+
+    if (g_final_time_seconds > 0.0) {
+        cout << "\033[33;1mTime: " << fixed << setprecision(2) << g_final_time_seconds << "s\033[0m";
+    }
+    else if (g_timer_started) {
+        auto now = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - g_start_time);
+        double elapsed_time = duration.count() / 1000.0;
+        // Clear to end of line to overwrite previous time
+        cout << "Time: " << fixed << setprecision(2) << elapsed_time << "s\033[K";
+    }
+    else {
+        cout << "Time: --.--s (Start moving!) \033[K";
+    }
+    cout << "\n\n";
     cout.flush();
 }
 
@@ -295,6 +319,13 @@ int handle_input(char** maze, char input) {
             next_c >= 0 && next_c < g_width &&
             maze[next_r][next_c] != WALL)
         {
+            // --- TIMER ADDITION: Start the timer on the first move ---
+            if (!g_timer_started) {
+                g_start_time = std::chrono::steady_clock::now();
+                g_timer_started = true;
+                g_final_time_seconds = 0.0; // Reset final time
+            }
+
             // Store current position as old before updating to new
             p_r_old = p_r;
             p_c_old = p_c;
@@ -324,6 +355,10 @@ int game_loop(char** maze) {
     p_r_old = 1;
     p_c_old = 1;
 
+    // --- TIMER ADDITION: Reset timer state for a new game ---
+    g_timer_started = false;
+    g_final_time_seconds = 0.0;
+
     // Draw the entire maze once before the loop
     draw_initial_maze(maze);
 
@@ -343,8 +378,16 @@ int game_loop(char** maze) {
 
         if (status == 3 || status == 2) { // Reset or Win
             if (status == 2) {
-                // Display win message using ANSI codes
-                cout << "\033[2;1H\033[K\033[32;1m*** CONGRATULATIONS! YOU REACHED THE END (E)! ***\033[0m\n";
+                // --- TIMER ADDITION: Calculate final time upon win ---
+                auto end_time = std::chrono::steady_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - g_start_time);
+                g_final_time_seconds = duration.count() / 1000.0;
+                g_timer_started = false; // Stop the timer
+
+                // Display win message using ANSI codes, including the final time
+                cout << "\033[2;1H\033[K\033[32;1m*** CONGRATULATIONS! YOU REACHED THE END (E) in "
+                    << fixed << setprecision(2) << g_final_time_seconds << "s! ***\033[0m\n";
+
 
                 // Use Windows Sleep() for delay
                 Sleep(1500); // 1.5 seconds delay
@@ -355,6 +398,12 @@ int game_loop(char** maze) {
             p_c_old = p_c;
             p_r = 1;
             p_c = 1;
+
+            // --- TIMER ADDITION: Reset timer state on explicit reset (R) ---
+            if (status == 3) {
+                g_timer_started = false;
+                g_final_time_seconds = 0.0;
+            }
 
             // Update the screen for the reset
             draw_player_update(maze);
@@ -369,9 +418,6 @@ int game_loop(char** maze) {
 int main() {
     // 1. Get the maze setup while still in standard input mode
     char** maze = setup_maze();
-
-    // 2. Set terminal to raw mode (mostly a formality for Windows setup)
-//    set_terminal_raw();
 
     // 3. Start the game loop
     int result = game_loop(maze);
