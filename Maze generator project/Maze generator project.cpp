@@ -3,8 +3,9 @@
 #include <algorithm>
 #include <conio.h>
 #include <chrono> // For timing
-#include <iomanip> // For setprecision and fixed <<
+#include <iomanip> // For setprecision and fixed
 #include <limits> // Required for numeric_limits
+#include <string> // Required for string
 
 #define NOMINMAX
 
@@ -33,7 +34,6 @@ int p_c = 0; // Current Player Column
 int p_r_old = 0; // Previous Player Row (for updating the console)
 int p_c_old = 0; // Previous Player Column (for updating the console)
 
-//void set_terminal_raw();
 void reset_terminal();
 char get_instant_input();
 
@@ -47,9 +47,10 @@ void print_header(const string& message);
 void draw_initial_maze(char** maze);
 void draw_player_update(char** maze);
 int handle_input(char** maze, char input);
+// Updated game_loop to manage the freeze on win
 int game_loop(char** maze);
-
-
+int main_menu();
+int post_game_menu();
 
 void reset_terminal() {
     // Ensure cursor is visible when the program exits using ANSI escape code.
@@ -185,7 +186,8 @@ void print_header(const string& message) {
     cout << "Current Pos: (" << p_r << ", " << p_c << ") | ";
 
     if (g_final_time_seconds > 0.0) {
-        cout << "\033[33;1mTime: " << fixed << setprecision(2) << g_final_time_seconds << "s\033[0m";
+        // Display final time in bright green upon win
+        cout << "\033[32;1mFinal Time: " << fixed << setprecision(2) << g_final_time_seconds << "s\033[0m";
     }
     else if (g_timer_started) {
         auto now = std::chrono::steady_clock::now();
@@ -344,9 +346,9 @@ int handle_input(char** maze, char input) {
 }
 
 /**
- * @brief The main game loop function. Runs until the player quits.
+ * @brief The main game loop function. Runs until the player quits or wins.
  * @param maze The maze grid.
- * @return 0 on successful exit.
+ * @return Status code: 0 (Quit), 1 (Win), 2 (Reset - Should not happen here)
  */
 int game_loop(char** maze) {
     // Player starts at (1, 1) as set in setup_maze
@@ -364,12 +366,14 @@ int game_loop(char** maze) {
 
     while (true) {
         // Use _getch() for instant, non-blocking input
+        // Note: Using get_instant_input() here means the loop will consume CPU aggressively
+        // in a real application, you might add a small sleep or use a different input method.
         char input = get_instant_input();
 
         int status = handle_input(maze, input);
 
         if (status == 4) { // Quit
-            break;
+            return 0; // Indicate quit
         }
 
         if (status == 1) { // Successful Move
@@ -384,51 +388,187 @@ int game_loop(char** maze) {
                 g_final_time_seconds = duration.count() / 1000.0;
                 g_timer_started = false; // Stop the timer
 
-                // Display win message using ANSI codes, including the final time
-                cout << "\033[2;1H\033[K\033[32;1m*** CONGRATULATIONS! YOU REACHED THE END (E) in "
-                    << fixed << setprecision(2) << g_final_time_seconds << "s! ***\033[0m\n";
+                // Update player position one last time (P over E)
+                draw_player_update(maze);
 
+                // Print the final win message in the header and FREEZE the screen
+                cout << "\033[2;1H\033[K\033[32;1m*** CONGRATULATIONS! YOU REACHED THE END (E)! ***\033[0m\n";
 
-                // Use Windows Sleep() for delay
-                Sleep(1500); // 1.5 seconds delay
+                // Update header again to show final time clearly
+                cout << "\033[" << (g_height + 6) << ";1H";
+                print_header("Game Over! See final time above.");
+                cout.flush();
+
+                // Return 1 to signal that the player won the maze
+                return 1;
             }
 
-            // Reset player position to START (1,1)
-            p_r_old = p_r;
-            p_c_old = p_c;
-            p_r = 1;
-            p_c = 1;
-
-            // --- TIMER ADDITION: Reset timer state on explicit reset (R) ---
+            // If status == 3 (Reset), reset positions and timer state
             if (status == 3) {
+                // Reset player position to START (1,1)
+                p_r_old = p_r;
+                p_c_old = p_c;
+                p_r = 1;
+                p_c = 1;
+
                 g_timer_started = false;
                 g_final_time_seconds = 0.0;
-            }
 
-            // Update the screen for the reset
-            draw_player_update(maze);
+                // Update the screen for the reset
+                draw_player_update(maze);
+            }
         }
     }
-    return 0; // Success
+}
+
+// --- NEW POST-GAME MENU IMPLEMENTATION ---
+
+/**
+ * @brief Displays the menu after the maze is won.
+ * @return 1 (Play New), 2 (Main Menu), 0 (Quit).
+ */
+int post_game_menu() {
+    int choice = 0;
+    while (true) {
+        // Clear screen below the maze and print the menu
+        cout << "\033[" << (g_height + 8) << ";1H"; // Move cursor a few lines below the maze/footer
+        cout << "\033[J"; // Clear screen from here down
+
+        cout << "\033[1m+---------------------------------+\033[0m\n";
+        cout << "\033[1m|      \033[33;1mWhat would you like to do?\033[0m     |\033[0m\n";
+        cout << "\033[1m+---------------------------------+\033[0m\n";
+        cout << "| 1. \033[32;1mPlay New Maze\033[0m                     |\n";
+        cout << "| 2. \033[34;1mBack to Main Menu\033[0m                 |\n";
+        cout << "| 3. \033[31;1mQuit Game\033[0m                           |\n";
+        cout << "\033[1m+---------------------------------+\033[0m\n";
+        cout << "Enter your choice (1-3): ";
+
+        if (cin >> choice) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear buffer
+            switch (choice) {
+            case 1: return 1; // Play New Maze
+            case 2: return 2; // Back to Main Menu
+            case 3: return 0; // Quit Game
+            default:
+                cout << "\nInvalid choice. Please enter 1, 2, or 3. Press any key to continue...";
+                get_instant_input();
+                break;
+            }
+        }
+        else {
+            // Handle non-integer input
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "\nInvalid input. Please enter a number. Press any key to continue...";
+            get_instant_input();
+        }
+    }
+}
+
+// --- MAIN MENU IMPLEMENTATION ---
+
+/**
+ * @brief Displays the main menu and handles user selection.
+ * @return 1 for Play, 0 for Quit.
+ */
+int main_menu() {
+    int choice = 0;
+    while (true) {
+        cout << "\033[H\033[J"; // Clear screen
+        cout << "\033[1m+----------------------------------+\033[0m\n";
+        cout << "\033[1m|      C++ Console Maze Game       |\033[0m\n";
+        cout << "\033[1m+----------------------------------+\033[0m\n";
+        cout << "| 1. \033[32;1mPlay Game\033[0m                       |\n";
+        cout << "| 2. \033[34;1mHigh Scores (Not Implemented)\033[0m |\n";
+        cout << "| 3. \033[31;1mQuit\033[0m                            |\n";
+        cout << "\033[1m+----------------------------------+\033[0m\n";
+        cout << "Enter your choice (1-3): ";
+
+        if (cin >> choice) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear buffer
+            switch (choice) {
+            case 1:
+                return 1; // Play Game
+            case 2:
+                // High Scores - Simple placeholder for now
+                cout << "\033[H\033[J"; // Clear screen
+                cout << "High Scores feature not yet implemented. Press any key to return to menu...";
+                get_instant_input();
+                break; // Back to menu loop
+            case 3:
+                return 0; // Quit
+            default:
+                cout << "\nInvalid choice. Please enter 1, 2, or 3. Press any key to continue...";
+                get_instant_input();
+                break;
+            }
+        }
+        else {
+            // Handle non-integer input
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "\nInvalid input. Please enter a number. Press any key to continue...";
+            get_instant_input();
+        }
+    }
 }
 
 /**
  * @brief Main function to initialize, run, and clean up the maze game.
  */
 int main() {
-    // 1. Get the maze setup while still in standard input mode
-    char** maze = setup_maze();
+    // Main program loop to handle game restarts and menu navigation
+    while (true) {
+        char** maze = nullptr;
+        int menu_choice = main_menu();
 
-    // 3. Start the game loop
-    int result = game_loop(maze);
+        if (menu_choice == 0) {
+            break; // Quit from main menu
+        }
 
-    // 4. Reset terminal and clean up
+        if (menu_choice == 1) { // Play Game
+            // Loop for playing one or more mazes
+            while (true) {
+                // 1. Setup the maze (and get size input)
+                maze = setup_maze();
+
+                // 2. Start the game loop
+                int game_status = game_loop(maze);
+
+
+                if (game_status == 0) {
+                    // Quit during game
+                    cleanup_grid(maze); // Cleanup maze if allocated
+                    maze = nullptr;
+                    break;
+                }
+
+                // If game_status == 1 (Win), show the post-game menu
+                if (game_status == 1) {
+                    // 3. Show the menu right over the screen freeze
+                    int post_game_choice = post_game_menu();
+
+                    // 4. Cleanup the maze memory after the user has made a choice
+                    cleanup_grid(maze);
+                    maze = nullptr;
+
+                    if (post_game_choice == 1) {
+                        continue; // Play New Maze (loops back to setup_maze)
+                    }
+                    if (post_game_choice == 2) {
+                        break; // Back to Main Menu (breaks inner loop, outer loop runs main_menu)
+                    }
+                    if (post_game_choice == 0) {
+                        goto exit_program; // Jump to clean exit
+                    }
+                }
+            }
+        }
+    }
+
+exit_program:
     reset_terminal();
-    cleanup_grid(maze);
-
-    // Clear screen and print final message
     cout << "\033[H\033[J";
-    cout << "Program finished. Thank you for playing!\n";
-
-    return result;
+    cout << "Program finished. Goodbye!\n";
+    return 0;
 }
