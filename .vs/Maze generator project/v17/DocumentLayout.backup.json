@@ -5,6 +5,10 @@
     {
       "AbsoluteMoniker": "D:0:0:{66D6E70C-C98B-4D99-93B0-DFEAC236B158}|Maze generator project\\Maze generator project.vcxproj|C:\\Users\\damya\\OneDrive\\Desktop\\Projects 2025\\maze-game\\Maze generator project\\Maze generator project.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{66D6E70C-C98B-4D99-93B0-DFEAC236B158}|Maze generator project\\Maze generator project.vcxproj|solutionrelative:Maze generator project\\Maze generator project.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{66D6E70C-C98B-4D99-93B0-DFEAC236B158}|Maze generator project\\Maze generator project.vcxproj|C:\\Users\\damya\\OneDrive\\Desktop\\Projects 2025\\maze-game\\Maze generator project\\Header.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{66D6E70C-C98B-4D99-93B0-DFEAC236B158}|Maze generator project\\Maze generator project.vcxproj|solutionrelative:Maze generator project\\Header.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
@@ -14,17 +18,30 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Header.h",
+              "DocumentMoniker": "C:\\Users\\damya\\OneDrive\\Desktop\\Projects 2025\\maze-game\\Maze generator project\\Header.h",
+              "RelativeDocumentMoniker": "Maze generator project\\Header.h",
+              "ToolTip": "C:\\Users\\damya\\OneDrive\\Desktop\\Projects 2025\\maze-game\\Maze generator project\\Header.h",
+              "RelativeToolTip": "Maze generator project\\Header.h",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-11-16T16:28:11.338Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "Maze generator project.cpp",
               "DocumentMoniker": "C:\\Users\\damya\\OneDrive\\Desktop\\Projects 2025\\maze-game\\Maze generator project\\Maze generator project.cpp",
               "RelativeDocumentMoniker": "Maze generator project\\Maze generator project.cpp",
-              "ToolTip": "C:\\Users\\damya\\OneDrive\\Desktop\\Projects 2025\\maze-game\\Maze generator project\\Maze generator project.cpp",
-              "RelativeToolTip": "Maze generator project\\Maze generator project.cpp",
-              "ViewState": "AgIAAPEAAAAAAAAAAAAAAOMAAAABAAAAAAAAAA==",
+              "ToolTip": "C:\\Users\\damya\\OneDrive\\Desktop\\Projects 2025\\maze-game\\Maze generator project\\Maze generator project.cpp*",
+              "RelativeToolTip": "Maze generator project\\Maze generator project.cpp*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-11-16T15:07:55Z",
               "EditorCaption": ""

@@ -1,25 +1,24 @@
 #include <iostream>
-#include <vector>
-#include <cstdlib> 
-#include <ctime>   
-#include <utility> 
+#include <vector> 
 #include <algorithm> 
-#include <limits> 
+#include <conio.h>
 
-#include <conio.h> // For _getch()
-#include <windows.h> // For Sleep
+#define NOMINMAX 
+
+#include <windows.h>
 
 
 using namespace std;
 
-// --- Constants ---
-const char WALL = 178;//176 176 178 219
+ char PLAYER = 245;
+ char WALL = 178;//176 176 178 219
+
 const char PATH = ' ';
 const char START = 'S';
 const char END = 'E';
-const char PLAYER = 245;
 
-// --- Global State (Simplified) ---
+
+
 int g_height = 0;
 int g_width = 0;
 int p_r = 0; // Current Player Row
@@ -27,40 +26,35 @@ int p_c = 0; // Current Player Column
 int p_r_old = 0; // Previous Player Row (for updating the console)
 int p_c_old = 0; // Previous Player Column (for updating the console)
 
+//void set_terminal_raw();
+void reset_terminal();
+char get_instant_input();
+
+// Maze Generation/Memory
+void cleanup_grid(char** maze);
+void carve_path(char** maze, int r, int c);
+char** setup_maze();
+
+// Game Logic/Rendering
+void print_header(const string& message);
+void draw_initial_maze(char** maze);
+void draw_player_update(char** maze);
+int handle_input(char** maze, char input);
+int game_loop(char** maze);
 
 
-// --- Terminal Control Functions ---
 
-/**
- * @brief Sets the terminal into raw mode (non-canonical and no echo) for instant input.
- */
-void set_terminal_raw() {
-#ifdef _WIN32
-    // On Windows, _getch() provides raw input.
-#else
-    // On POSIX systems (Linux, macOS)
-    struct termios new_termios;
-    tcgetattr(STDIN_FILENO, &g_old_termios); // Save old settings
-    new_termios = g_old_termios;
-    // Disable canonical mode (ICANON) and echo (ECHO)
-    new_termios.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &new_termios);
-#endif
-}
-
-/**
- * @brief Resets the terminal to its original, normal state.
- */
 void reset_terminal() {
-#ifndef _WIN32
-    // Restore saved settings on POSIX systems
-    tcsetattr(STDIN_FILENO, TCSANOW, &g_old_termios);
-#endif
-    // Ensure cursor is visible when the program exits
+    // Ensure cursor is visible when the program exits using ANSI escape code.
     cout << "\033[?25h";
 }
 
-// --- Maze and Memory Functions ---
+char get_instant_input() {
+    return _getch();
+}
+
+
+// --- Maze and Memory Implementations ---
 
 /**
  * @brief Cleans up the dynamically allocated memory for the maze grid.
@@ -77,12 +71,14 @@ void cleanup_grid(char** maze) {
 
 /**
  * @brief Recursively carves paths using the Recursive Backtracker (DFS) algorithm.
- * (Logic remains the same, no changes needed for non-redrawing movement)
+ * @param maze The maze grid being generated.
+ * @param r Current row.
+ * @param c Current column.
  */
 void carve_path(char** maze, int r, int c) {
     maze[r][c] = PATH;
 
-    // Define possible directions: (dr, dc). We look 2 steps away.
+    // Define possible directions: (dr, dc) - checks 2 cells away to ensure walls remain
     vector<pair<int, int>> directions = {
         {-2, 0}, {+2, 0}, {0, -2}, {0, +2}
     };
@@ -95,7 +91,7 @@ void carve_path(char** maze, int r, int c) {
         int nr = r + dir.first;
         int nc = c + dir.second;
 
-        // Check boundaries against the global dimensions
+        // Check boundaries
         if (nr > 0 && nr < g_height - 1 && nc > 0 && nc < g_width - 1) {
             // If the neighbor cell is still a wall (unvisited)
             if (maze[nr][nc] == WALL) {
@@ -111,39 +107,93 @@ void carve_path(char** maze, int r, int c) {
     }
 }
 
-// --- Input/Output and Game Logic Functions ---
+/**
+ * @brief Handles user input for size and initiates maze setup.
+ * @return The dynamically allocated maze grid.
+ */
+char** setup_maze() {
+    int size = 0;
+    // Requirements: 10x10 to 50x50
+    const int MIN_SIZE = 10;
+    const int MAX_SIZE = 50;
+
+    // --- User Input and Validation ---
+    cout << "\033[H\033[J"; // Clear screen
+    cout << "--- C++ Random Maze Generator ---\n";
+    cout << "Enter the desired maze size (N for NxN, min " << MIN_SIZE << ", max " << MAX_SIZE << "): ";
+
+    // Simple input validation loop
+    while (!(cin >> size) || size < MIN_SIZE || size > MAX_SIZE) {
+        cout << "Invalid input. Please enter a number between "
+            << MIN_SIZE << " and " << MAX_SIZE << ": ";
+        cin.clear(); // Clear error flags
+        cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear bad input buffer
+    }
+
+    // --- Dimension Setup (Ensures odd size for the generation algorithm) ---
+    // The algorithm requires odd dimensions for proper wall/path separation.
+    g_height = size % 2 == 0 ? size + 1 : size;
+    g_width = size % 2 == 0 ? size + 1 : size;
+
+    cout << "\nGenerating a random maze of size " << g_height << "x" << g_width << "...\n";
+
+    // --- Maze Allocation and Initialization (Dynamic Memory) ---
+    char** maze = new char* [g_height];
+    for (int i = 0; i < g_height; ++i) {
+        maze[i] = new char[g_width];
+        for (int j = 0; j < g_width; ++j) {
+            maze[i][j] = WALL;
+        }
+    }
+
+    // --- Maze Generation ---
+    srand(time(0));
+
+    // Start carving from (1, 1), the first non-boundary cell
+    carve_path(maze, 1, 1);
+
+    // Set the Start and End points (Start at 1,1; End at g_height-2, g_width-2)
+    maze[1][1] = START;
+    maze[g_height - 2][g_width - 2] = END;
+
+    // Clear any pending standard input buffer before starting the game
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+    return maze;
+}
+
+// --- Game Logic and Rendering Implementations ---
 
 /**
  * @brief Prints the game status header at the top of the screen.
  * @param message The message to display (e.g., instructions, win message).
- * Uses ANSI \033[H to move cursor to top-left before printing.
  */
 void print_header(const string& message) {
     // Move cursor to Home (top-left)
     cout << "\033[H";
-    cout << "+---[ MAZE: " << g_height << "x" << g_width << " ]---+\n";
+    cout << "\033[1m+---[ C++ MAZE: " << g_height << "x" << g_width << " ]---+\033[0m\n";
     cout << message << "\n";
     cout << "Current Pos: (" << p_r << ", " << p_c << ")\n\n";
     cout.flush();
 }
 
 /**
- * @brief Prints the entire maze structure once.
+ * @brief Prints the entire maze structure once, clearing the screen.
  * @param maze The maze grid to display.
  */
 void draw_initial_maze(char** maze) {
-    // ANSI code: \033[H moves cursor to Home, \033[J clears screen from cursor position down
+    // ANSI code: \033[H moves cursor to Home, \033[J clears screen
     cout << "\033[H\033[J";
 
-    // Print the header first (it clears the screen)
-    print_header("Move with W/A/S/D or Arrow Keys. Press 'R' to reset or 'Q' to quit.");
+    // Print the header first
+    print_header("Move with W/A/S/D. Press 'R' to reset or 'Q' to quit.");
 
     // The maze starts printing on row 5 (1-indexed) after the header lines.
     for (int i = 0; i < g_height; ++i) {
         for (int j = 0; j < g_width; ++j) {
-            // Determine the character/color to print based on the cell content
+            // Check for player first
             if (i == p_r && j == p_c) {
-                // Initial player position
+                // Initial player position (Bright Yellow)
                 cout << "\033[33;1m" << PLAYER << PLAYER << "\033[0m";
             }
             else if (maze[i][j] == WALL) {
@@ -165,30 +215,27 @@ void draw_initial_maze(char** maze) {
         }
         cout << "\n";
     }
-    cout << "+---------------------------------+\n\n";
+    cout << "\033[1m+---------------------------------+\033[0m\n\n";
     cout.flush();
 }
 
 /**
- * @brief Updates the player's position on the screen without redrawing the whole maze.
+ * @brief Updates the player's position on the screen using cursor control
+ * without redrawing the whole maze (efficient rendering).
  * @param maze The maze grid, used to determine what character was left behind.
  */
 void draw_player_update(char** maze) {
-    // Console Row = maze_row + 5 (5 is the offset for the 4 header lines + 1 blank line)
-    // Console Col = maze_col * 2 + 1 (since each cell prints two characters, and console is 1-indexed)
+    // Row offset is 5 (4 header lines + 1 blank line before maze starts)
+    // Column offset is 1 (1-indexed console, and each maze cell prints 2 chars)
 
     // --- Step 1: Erase Old Position and Restore Path/Start/End character ---
     char old_char = maze[p_r_old][p_c_old];
 
-    // Move cursor to old position
+    // Move cursor to old position: Row=p_r_old + 5, Col=p_c_old * 2 + 1
     cout << "\033[" << (p_r_old + 5) << ";" << (p_c_old * 2 + 1) << "H";
 
-    // Restore the character that was originally there (Path/Start/End)
-    if (old_char == WALL) {
-        // This case should ideally not happen if movement logic is correct, but handled defensively.
-        cout << "\033[38;5;238m" << WALL << WALL << "\033[0m";
-    }
-    else if (old_char == START) {
+    // Restore the character that was originally there
+    if (old_char == START) {
         cout << "\033[32;1m" << START << START << "\033[0m";
     }
     else if (old_char == END) {
@@ -203,28 +250,15 @@ void draw_player_update(char** maze) {
     // Move cursor to new position
     cout << "\033[" << (p_r + 5) << ";" << (p_c * 2 + 1) << "H";
 
-    // Draw the player
+    // Draw the player (Bright Yellow)
     cout << "\033[33;1m" << PLAYER << PLAYER << "\033[0m";
 
-    // --- Step 3: Move cursor away to bottom of screen and print header again ---
-    // (This ensures the next user input is on a new line and the header is updated)
+    // --- Step 3: Update Header and move cursor to bottom ---
+    // Move cursor to the bottom of the screen
     cout << "\033[" << (g_height + 6) << ";1H";
 
-    print_header("Move with W/A/S/D or Arrow Keys. Press 'R' to reset or 'Q' to quit.");
+    print_header("Move with W/A/S/D. Press 'R' to reset or 'Q' to quit.");
     cout.flush();
-}
-
-/**
- * @brief Gets a character input instantly, without waiting for Enter.
- */
-char get_instant_input() {
-#ifdef _WIN32
-    // Windows-specific instant input
-    return _getch();
-#else
-    // POSIX-specific instant input (requires terminal to be in raw mode)
-    return cin.get();
-#endif
 }
 
 /**
@@ -241,24 +275,12 @@ int handle_input(char** maze, char input) {
     if (input == 'q' || input == 'Q') return 4; // Quit
     if (input == 'r' || input == 'R') return 3; // Reset
 
-    // Check for WASD or Arrow Key movement
+    // Check for WASD movement
     switch (input) {
-    case 'w':
-    case 'W':
-        dr = -1; // Up
-        break;
-    case 's':
-    case 'S':
-        dr = 1;  // Down
-        break;
-    case 'a':
-    case 'A':
-        dc = -1; // Left
-        break;
-    case 'd':
-    case 'D':
-        dc = 1;  // Right
-        break;
+    case 'w': case 'W': dr = -1; break; // Up
+    case 's': case 'S': dr = 1;  break; // Down
+    case 'a': case 'A': dc = -1; break; // Left
+    case 'd': case 'D': dc = 1;  break; // Right
     default:
         return 0; // Not a valid move command or control
     }
@@ -268,35 +290,35 @@ int handle_input(char** maze, char input) {
         int next_r = p_r + dr;
         int next_c = p_c + dc;
 
-        // 1. Check if the move is within bounds
-        if (next_r >= 0 && next_r < g_height && next_c >= 0 && next_c < g_width) {
-            // 2. Check if the move is not into a wall (Keeping existing hitbox logic)
-            if (maze[next_r][next_c] != WALL) {
-                // Store current position as old before updating to new
-                p_r_old = p_r;
-                p_c_old = p_c;
+        // 1. Check if the move is within bounds and not a wall
+        if (next_r >= 0 && next_r < g_height &&
+            next_c >= 0 && next_c < g_width &&
+            maze[next_r][next_c] != WALL)
+        {
+            // Store current position as old before updating to new
+            p_r_old = p_r;
+            p_c_old = p_c;
 
-                p_r = next_r;
-                p_c = next_c;
+            p_r = next_r;
+            p_c = next_c;
 
-                // 3. Check for the win condition
-                if (maze[p_r][p_c] == END) {
-                    return 2; // Game won
-                }
-                return 1; // Successful move
+            // 2. Check for the win condition
+            if (maze[p_r][p_c] == END) {
+                return 2; // Game won
             }
+            return 1; // Successful move
         }
     }
     return 0; // Move unsuccessful (hit wall or boundary)
 }
 
 /**
- * @brief The main game loop function.
+ * @brief The main game loop function. Runs until the player quits.
  * @param maze The maze grid.
- * @return The final status of the game (0 for success).
+ * @return 0 on successful exit.
  */
 int game_loop(char** maze) {
-    // Player position is set to START (1, 1) on entry or reset.
+    // Player starts at (1, 1) as set in setup_maze
     p_r = 1;
     p_c = 1;
     p_r_old = 1;
@@ -306,11 +328,8 @@ int game_loop(char** maze) {
     draw_initial_maze(maze);
 
     while (true) {
-        char input = get_instant_input(); // Get input without waiting for Enter
-
-        if (cin.eof()) {
-            break;
-        }
+        // Use _getch() for instant, non-blocking input
+        char input = get_instant_input();
 
         int status = handle_input(maze, input);
 
@@ -319,24 +338,20 @@ int game_loop(char** maze) {
         }
 
         if (status == 1) { // Successful Move
-            // Only update the player's position on screen, no full redraw!
             draw_player_update(maze);
         }
 
         if (status == 3 || status == 2) { // Reset or Win
             if (status == 2) {
-                // Use ANSI codes to display the win message above the maze
+                // Display win message using ANSI codes
                 cout << "\033[2;1H\033[K\033[32;1m*** CONGRATULATIONS! YOU REACHED THE END (E)! ***\033[0m\n";
-                // Add a small delay for the user to read the win message before reset
-#ifdef _WIN32
-                Sleep(1500);
-#else
-                usleep(1500000);
-#endif
+
+                // Use Windows Sleep() for delay
+                Sleep(1500); // 1.5 seconds delay
             }
 
-            // Reset player position (Old and Current)
-            p_r_old = p_r; // The old position becomes the last position before reset
+            // Reset player position to START (1,1)
+            p_r_old = p_r;
             p_c_old = p_c;
             p_r = 1;
             p_c = 1;
@@ -348,60 +363,6 @@ int game_loop(char** maze) {
     return 0; // Success
 }
 
-
-/**
- * @brief Handles user input for size and initiates maze setup.
- * @return The dynamically allocated maze grid.
- */
-char** setup_maze() {
-    int size = 0;
-    const int MIN_SIZE = 10;
-    const int MAX_SIZE = 50;
-
-    // --- User Input and Validation ---
-    cout << "--- C++ Random Maze Generator ---\n";
-    cout << "Enter the desired maze size (N for NxN, min " << MIN_SIZE << ", max " << MAX_SIZE << "): ";
-
-    // Simple input validation loop
-    while (!(cin >> size) || size < MIN_SIZE || size > MAX_SIZE) {
-        cout << "Invalid input. Please enter a number between "
-            << MIN_SIZE << " and " << MAX_SIZE << ": ";
-        cin.clear(); // Clear error flags
-        // Clear bad input buffer: 256 is a reliable size for most console lines
-        cin.ignore(256, '\n');
-    }
-
-    // --- Dimension Setup (Ensures odd size for the generation algorithm) ---
-    g_height = size % 2 == 0 ? size + 1 : size;
-    g_width = size % 2 == 0 ? size + 1 : size;
-
-    cout << "\nGenerating a random maze of size " << g_height << "x" << g_width << "...\n";
-
-    // --- Maze Allocation and Initialization ---
-    char** maze = new char* [g_height];
-    for (int i = 0; i < g_height; ++i) {
-        maze[i] = new char[g_width];
-        for (int j = 0; j < g_width; ++j) {
-            maze[i][j] = WALL;
-        }
-    }
-
-    // --- Maze Generation ---
-    srand(time(0));
-
-    // Start carving from (1, 1), the first non-boundary cell
-    carve_path(maze, 1, 1);
-
-    // Set the Start and End points
-    maze[1][1] = START;
-    maze[g_height - 2][g_width - 2] = END;
-
-    // Clear any pending input buffer before starting the game
-    cin.ignore(256, '\n');
-
-    return maze;
-}
-
 /**
  * @brief Main function to initialize, run, and clean up the maze game.
  */
@@ -409,8 +370,8 @@ int main() {
     // 1. Get the maze setup while still in standard input mode
     char** maze = setup_maze();
 
-    // 2. Set terminal to raw mode for instant key presses
-    set_terminal_raw();
+    // 2. Set terminal to raw mode (mostly a formality for Windows setup)
+//    set_terminal_raw();
 
     // 3. Start the game loop
     int result = game_loop(maze);
@@ -419,6 +380,8 @@ int main() {
     reset_terminal();
     cleanup_grid(maze);
 
+    // Clear screen and print final message
+    cout << "\033[H\033[J";
     cout << "Program finished. Thank you for playing!\n";
 
     return result;
