@@ -6,23 +6,18 @@
 #include <algorithm> 
 #include <limits> 
 
-// --- Platform-Specific Includes for Non-Blocking/Raw Input ---
-#ifdef _WIN32
 #include <conio.h> // For _getch()
 #include <windows.h> // For Sleep
-#else
-#include <termios.h> // For tcgetattr, tcsetattr (POSIX systems like Linux/macOS)
-#include <unistd.h>  // For STDIN_FILENO, usleep
-#endif
+
 
 using namespace std;
 
 // --- Constants ---
-const char WALL = '#';
+const char WALL = 178;//176 176 178 219
 const char PATH = ' ';
 const char START = 'S';
 const char END = 'E';
-const char PLAYER = '@';
+const char PLAYER = 245;
 
 // --- Global State (Simplified) ---
 int g_height = 0;
@@ -32,10 +27,7 @@ int p_c = 0; // Current Player Column
 int p_r_old = 0; // Previous Player Row (for updating the console)
 int p_c_old = 0; // Previous Player Column (for updating the console)
 
-// --- Platform-Specific Terminal State Storage ---
-#ifndef _WIN32
-struct termios g_old_termios;
-#endif
+
 
 // --- Terminal Control Functions ---
 
@@ -267,21 +259,6 @@ int handle_input(char** maze, char input) {
     case 'D':
         dc = 1;  // Right
         break;
-        // Arrow key handling (Escape sequence)
-        // Arrow keys send a sequence: ESCAPE (\033), [, then A, B, C, or D
-    case '\033': {
-        // Read the next two characters for the sequence: ESC [ A/B/C/D
-        char second_char = get_instant_input();
-        if (second_char == '[') {
-            switch (get_instant_input()) {
-            case 'A': dr = -1; break; // Up Arrow
-            case 'B': dr = 1;  break; // Down Arrow
-            case 'C': dc = 1;  break; // Right Arrow
-            case 'D': dc = -1; break; // Left Arrow
-            }
-        }
-        break;
-    }
     default:
         return 0; // Not a valid move command or control
     }
