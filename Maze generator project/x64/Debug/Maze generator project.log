@@ -1,5 +1,5 @@
 ﻿  Maze generator project.cpp
-C:\Users\damya\OneDrive\Desktop\Projects 2025\maze-game\Maze generator project\Maze generator project.cpp(21,15): warning C4309: 'initializing': truncation of constant value
-C:\Users\damya\OneDrive\Desktop\Projects 2025\maze-game\Maze generator project\Maze generator project.cpp(22,13): warning C4309: 'initializing': truncation of constant value
-C:\Users\damya\OneDrive\Desktop\Projects 2025\maze-game\Maze generator project\Maze generator project.cpp(157,15): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+C:\Users\damya\OneDrive\Desktop\Projects 2025\maze-game\Maze generator project\Maze generator project.cpp(22,15): warning C4309: 'initializing': truncation of constant value
+C:\Users\damya\OneDrive\Desktop\Projects 2025\maze-game\Maze generator project\Maze generator project.cpp(23,13): warning C4309: 'initializing': truncation of constant value
+C:\Users\damya\OneDrive\Desktop\Projects 2025\maze-game\Maze generator project\Maze generator project.cpp(158,15): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
   Maze generator project.vcxproj -> C:\Users\damya\OneDrive\Desktop\Projects 2025\maze-game\x64\Debug\Maze generator project.exe
